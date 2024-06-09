@@ -2,6 +2,8 @@ import psycopg2
 from lookups import ErrorHandling, InputTypes
 from logging_handler import show_error_message
 import pandas as pd
+import numpy as np
+
 
 config_dict = {
     "database":"Game of Thrones",
@@ -66,9 +68,9 @@ def execute_query(db_session, query):
         cursor = db_session.cursor()
         cursor.execute(query)
         db_session.commit()
-    except Exception as zahraa:
+    except Exception as e:
         error_prefix = ErrorHandling.EXECUTE_QUERY_ERROR.value
-        suffix = str(zahraa)
+        suffix = str(e)
         show_error_message(error_prefix, suffix)
 
 
@@ -91,17 +93,26 @@ def return_create_statement_from_df(dataframe,schema_name, table_name):
     return create_table_statemnt
 
 
+
+
+import pandas as pd
+import numpy as np
+
 def return_insert_into_sql_statement_from_df(dataframe, schema_name, table_name):
     columns = ', '.join(dataframe.columns)
     insert_statement_list = []
     for _, row in dataframe.iterrows():
         value_strs = []
         for val in row.values:
+            if isinstance(val, (np.ndarray, pd.Series)):
+                val = val.item() if val.size == 1 else val
+            if isinstance(val, (list, tuple, np.ndarray, pd.Series)):
+                val = ', '.join(map(str, val))
             if pd.isna(val):
                 value_strs.append("NULL")
             elif isinstance(val, str):
-                # Escape single quotation marks in the string value
-                escaped_val = val.replace("'", "")
+                escaped_val = val.replace("'", "''")
+                
                 value_strs.append(f"'{escaped_val}'")
             else:
                 value_strs.append(str(val))
