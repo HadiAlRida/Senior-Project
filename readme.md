@@ -1,4 +1,3 @@
-Sure! Here is a simple README file for your face recognition script:
 
 ---
 
@@ -105,5 +104,3 @@ python script.py --test -f test/unknown.jpg -m cnn
 By following these steps, you should be able to recognize faces in images using the provided script.
 
 ---
-
-You can save this content into a `README.md` file in your project directory.
