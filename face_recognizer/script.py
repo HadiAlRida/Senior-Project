@@ -155,3 +155,4 @@ if __name__ == "__main__":
         validate(model=args.m)
     if args.test:
         recognize_faces(image_location=args.f, model=args.m)
+        #final version
