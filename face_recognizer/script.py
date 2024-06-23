@@ -111,6 +111,7 @@ def _recognize_face(unknown_encoding, loaded_encodings):
         for match, name in zip(boolean_matches, loaded_encodings["names"])
         if match
     )
+    
     if votes:
         return votes.most_common(1)[0][0]
 
