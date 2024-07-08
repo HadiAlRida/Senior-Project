@@ -6,6 +6,8 @@ import pandas as pd
 from networkx.algorithms import community as nx_community
 from sklearn.cluster import AgglomerativeClustering
 from mlxtend.frequent_patterns import apriori, association_rules
+from pyvis.network import Network
+import networkx as nx
 
 def build_network(results):
     G = nx.Graph()
@@ -32,7 +34,15 @@ def detect_communities_louvain(G):
 def detect_communities_girvan_newman(G):
     comp = nx_community.girvan_newman(G)
     limited = tuple(sorted(c) for c in next(comp))
-    return limited
+    
+    # Create a dictionary mapping nodes to their communities
+    partition = {}
+    for community_id, community in enumerate(limited):
+        for node in community:
+            partition[node] = community_id
+            
+    return partition
+
 
 def detect_communities_agglomerative(G):
     adjacency_matrix = nx.to_numpy_array(G)
@@ -50,33 +60,28 @@ def frequent_pattern_mining(G):
 def calculate_centrality_measures(G):
     degree_centrality = nx.degree_centrality(G)
     betweenness_centrality = nx.betweenness_centrality(G, weight='weight')
-    eigenvector_centrality = nx.eigenvector_centrality(G, weight='weight')
+    eigenvector_centrality = nx.eigenvector_centrality(G, weight='weight',max_iter=1000)
     return {
         "degree": degree_centrality,
         "betweenness": betweenness_centrality,
         "eigenvector": eigenvector_centrality,
     }
 
-def visualize_network(G, partition, centrality_measures):
-    pos = nx.spring_layout(G)
-    cmap = plt.get_cmap('viridis')
-    colors = [cmap(partition[node]) for node in G.nodes()]
-    
-    nx.draw(G, pos, node_color=colors, with_labels=True, node_size=300, font_size=10)
-    
-    plt.figure()
-    plt.title('Degree Centrality')
-    node_sizes = [v * 1000 for v in centrality_measures['degree'].values()]
-    nx.draw(G, pos, node_color=colors, with_labels=True, node_size=node_sizes)
-    
-    plt.figure()
-    plt.title('Betweenness Centrality')
-    node_sizes = [v * 1000 for v in centrality_measures['betweenness'].values()]
-    nx.draw(G, pos, node_color=colors, with_labels=True, node_size=node_sizes)
-    
-    plt.figure()
-    plt.title('Eigenvector Centrality')
-    node_sizes = [v * 1000 for v in centrality_measures['eigenvector'].values()]
-    nx.draw(G, pos, node_color=colors, with_labels=True, node_size=node_sizes)
+from pyvis.network import Network
+import networkx as nx
 
-    plt.show()
+# ... (other functions remain unchanged)
+
+def visualize_network(G, partition, centrality_measures):
+    net = Network(notebook=True)
+    
+    # Add nodes with partition as group
+    for node in G.nodes():
+        net.add_node(node, group=partition[node], title=f"Degree: {centrality_measures['degree'][node]:.2f}Betweenness: {centrality_measures['betweenness'][node]:.2f}Eigenvector: {centrality_measures['eigenvector'][node]:.2f}")
+    
+    # Add edges with weight
+    for source, target, data in G.edges(data=True):
+        net.add_edge(source, target, value=data['weight'])
+    
+    # Generate network layout and show
+    net.show("network.html")
