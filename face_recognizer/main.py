@@ -3,9 +3,8 @@ import logging
 from pathlib import Path
 import time
 
-# Importing the functions from the other modules
 from recognition_testing_module import encode_known_faces, test, validate, store_results, evaluate
-from network_module import build_network, detect_communities_louvain, detect_communities_girvan_newman, calculate_centrality_measures, visualize_network
+from network_module import build_network, detect_communities_louvain, detect_communities_girvan_newman, calculate_centrality_measures, visualize_network, export_friendship_data_to_db
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Recognize faces in images and perform community detection")
@@ -14,6 +13,9 @@ if __name__ == "__main__":
     parser.add_argument("--validate", action="store_true", help="Validate the model with images in the validation folder")
     parser.add_argument("-m", action="store", default="hog", choices=["hog", "cnn", "resnet", "mtcnn"], help="Which model to use for training: hog (CPU), cnn (GPU), resnet, mtcnn")
     parser.add_argument("--visualization", choices=["louvain", "girvan-newman", "none"], default="none", help="Type of network visualization to perform (default: none)")
+    parser.add_argument("--schema", default="Students", help="Database schema name")
+    parser.add_argument("--table", default="friendship_network", help="Database table name")
+    parser.add_argument("--detailed_table", default="detailed_friendship_data", help="Database table name for detailed friendship data")
     args = parser.parse_args()
 
     start_time = time.time()
@@ -38,7 +40,6 @@ if __name__ == "__main__":
         networking_elapsed_time = time.time() - networking_start_time
         logging.info(f"Networking completed in {networking_elapsed_time:.2f} seconds. Results stored in test_results.csv.")
         
-        # Evaluate the test results
         evaluate_start_time = time.time()
         report, accuracy = evaluate(true_labels, predicted_labels)
         evaluate_elapsed_time = time.time() - evaluate_start_time
@@ -49,7 +50,6 @@ if __name__ == "__main__":
         network_build_elapsed_time = time.time() - network_build_start_time
         logging.info(f"Network built in {network_build_elapsed_time:.2f} seconds with {len(G.nodes)} nodes and {len(G.edges)} edges.")
         
-        # Perform community detection using different algorithms
         community_detection_louvain_start_time = time.time()
         partition_louvain = detect_communities_louvain(G)
         community_detection_louvain_elapsed_time = time.time() - community_detection_louvain_start_time
@@ -60,13 +60,11 @@ if __name__ == "__main__":
         community_detection_girvan_newman_elapsed_time = time.time() - community_detection_girvan_newman_start_time
         logging.info(f"Detected {len(partition_girvan_newman)} communities using Girvan-Newman method in {community_detection_girvan_newman_elapsed_time:.2f} seconds.")
         
-        # Calculate centrality measures
         centrality_start_time = time.time()
         centrality_measures = calculate_centrality_measures(G)
         centrality_elapsed_time = time.time() - centrality_start_time
         logging.info(f"Centrality measures calculated in {centrality_elapsed_time:.2f} seconds.")
         
-        # Visualize the network based on user choice
         if args.visualization == "louvain":
             visualization_start_time = time.time()
             logging.info("Visualizing network with Louvain partition...")
@@ -80,7 +78,13 @@ if __name__ == "__main__":
             visualization_elapsed_time = time.time() - visualization_start_time
             logging.info(f"Network visualization with Girvan-Newman partition completed in {visualization_elapsed_time:.2f} seconds.")
         else:
-            logging.warning("No valid visualization option selected. Skipping visualization.")
+            logging.warning("No valid visualization option selected.")
+    # Export friendship data to database
+        if args.networking:
+            export_to_db_start_time = time.time()
+            export_friendship_data_to_db(G, args.schema, args.table, args.detailed_table, partition_louvain, centrality_measures)
+            export_to_db_elapsed_time = time.time() - export_to_db_start_time
+            logging.info(f"Friendship data exported to database in {export_to_db_elapsed_time:.2f} seconds.")
 
     total_elapsed_time = time.time() - start_time
-    logging.info(f"Total elapsed time: {total_elapsed_time:.2f} seconds.")
+    logging.info(f"Total execution time: {total_elapsed_time:.2f} seconds.")

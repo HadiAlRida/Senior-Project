@@ -6,7 +6,7 @@ import numpy as np
 
 
 config_dict = {
-    "database":"Game of Thrones",
+    "database":"Smart_University",
     "host":"localhost",
     "port":5432,
     "user":"postgres",
@@ -95,8 +95,6 @@ def return_create_statement_from_df(dataframe,schema_name, table_name):
 
 
 
-import pandas as pd
-import numpy as np
 
 def return_insert_into_sql_statement_from_df(dataframe, schema_name, table_name):
     columns = ', '.join(dataframe.columns)
@@ -121,19 +119,5 @@ def return_insert_into_sql_statement_from_df(dataframe, schema_name, table_name)
         insert_statement_list.append(insert_statement)
     return insert_statement_list
 
-import os
 
-def create_students_table(db_session):
-    try:
-        # Read SQL file
-        sql_file = "create_students_table.sql"
-        with open(sql_file, "r") as file:
-            query = file.read()
 
-        # Execute SQL query
-        execute_query(db_session, query)
-        print("Students table created successfully.")
-    except Exception as e:
-        error_prefix = ErrorHandling.EXECUTE_QUERY_ERROR.value
-        suffix = str(e)
-        show_error_message(error_prefix, suffix)
